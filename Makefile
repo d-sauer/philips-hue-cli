@@ -1,51 +1,45 @@
-# http://www.codershaven.com/multi-platform-makefile-for-go/
+# https://gist.github.com/eleniums/06c30c50befcfe36e7840ca46c9ebacd?permalink_comment_id=4354315#gistcomment-4354315
 
-EXECUTABLE=hue
-LOCAL=./bin/$(EXECUTABLE)
-WINDOWS=./bin/$(EXECUTABLE)_windows_amd64.exe
-LINUX=./bin/$(EXECUTABLE)_linux_amd64
-DARWIN=./bin/$(EXECUTABLE)_darwin_amd64
+EXECUTABLE=huec
+ROOT_DIR=./cmd
 VERSION=$(shell git describe --tags --always --long --dirty)
-
-run:
-	go run main.go
+LOCAL=$(EXECUTABLE)
+WINDOWS=$(EXECUTABLE)_windows_amd64_$(VERSION).exe
+LINUX=$(EXECUTABLE)_linux_amd64_$(VERSION)
+DARWIN=$(EXECUTABLE)_darwin_amd64_$(VERSION)
 
 .PHONY: all test clean
 
-all: test build ## Build and run tests
+all: test build
 
-test: ## Run unit tests
-	go test ./...
-	# ./scripts/test_unit.sh
+test:
+	go test ./... $(ROOT_DIR)
+
+build: local
+	@echo version: $(VERSION)
 
 build-all: windows linux darwin ## Build binaries
 	@echo version: $(VERSION)
 
-build: clean local
-	@echo version: $(VERSION)
-
 local: $(LOCAL) ## Build for local machine
 
-windows: $(WINDOWS) ## Build for Windows
+windows: $(WINDOWS)
 
-linux: $(LINUX) ## Build for Linux
+linux: $(LINUX)
 
-darwin: $(DARWIN) ## Build for Darwin (macOS)
-
-$(WINDOWS):
-	env GOOS=windows GOARCH=amd64 go build -v -o $(WINDOWS) -ldflags="-s -w -X main.version=$(VERSION)"
-
-$(LINUX):
-	env GOOS=linux GOARCH=amd64 go build -v -o $(LINUX) -ldflags="-s -w -X main.version=$(VERSION)"
-
-$(DARWIN):
-	env GOOS=darwin GOARCH=amd64 go build -v -o $(DARWIN) -ldflags="-s -w -X main.version=$(VERSION)"
+darwin: $(DARWIN)
 
 $(LOCAL):
-	go build -v -o $(LOCAL) -ldflags="-s -w -X main.version=$(VERSION)"
+	go build -v -o bin/$(LOCAL) -ldflags="-s -w -X main.version=$(VERSION)" $(ROOT_DIR)
 
+$(WINDOWS):
+	env GOOS=windows GOARCH=amd64 go build -v -o bin/$(WINDOWS) -ldflags="-s -w -X main.version=$(VERSION)" $(ROOT_DIR)
 
-PLATFORM=local
+$(LINUX):
+	env GOOS=linux GOARCH=amd64 go build -v -o bin/$(LINUX) -ldflags="-s -w -X main.version=$(VERSION)" $(ROOT_DIR)
+
+$(DARWIN):
+	env GOOS=darwin GOARCH=amd64 go build -v -o bin/$(DARWIN) -ldflags="-s -w -X main.version=$(VERSION)" $(ROOT_DIR)
 
 docker-build:
 	@docker build . --target bin \
@@ -53,6 +47,7 @@ docker-build:
 
 clean:
 	rm -rf ./bin
+	mkdir ./bin
 
 help: ## Display available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
